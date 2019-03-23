@@ -24,14 +24,14 @@ if __name__ == '__main__':
     
     dist = np.random.random(size=num_ue) * 200     # 每个ue的距离基站
     bn = np.random.uniform(300, 500, size=num_ue)  # 输入量 kbits
-    dn = np.random.uniform(900,1100, size=num_ue)  # 需要周期量 兆周期数
+    dn = np.random.uniform(900,1100, size=num_ue)  # 需要周期量 兆周期数 1Mhz = 1000khz = 1000 * 1000hz
     it , ie = 0.5, 0.5 # 权重
     pn , pi = 500, 100 # 传输功率， 闲置功率 mW
 
 
     # Full Local
     # 延迟+能耗
-    cost_full_local = sum( it*dn/(f*1024) + ie* dn*pow(10,-27)*pow(f*1024*1024*1024*1024,2) )
+    cost_full_local = sum( it*dn/(f*1000) + ie* dn*1000*1000*pow(10,-27)*pow(f*1000*1000*1000,2) )
     print(cost_full_local)
     # Full Offload
     # cost_full_Offload = bn / 
