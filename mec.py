@@ -33,6 +33,20 @@ if __name__ == '__main__':
     # 延迟+能耗
     cost_full_local = sum( it*dn/(f*1000) + ie* dn*1000*1000*pow(10,-27)*pow(f*1000*1000*1000,2) )
     print(cost_full_local)
+    
     # Full Offload
     # cost_full_Offload = bn / 
-    # rn = W / num_ue * math.log10(1+)
+    tmp_rn = 1000*1000* W / num_ue 
+    mw = pow(10, -174 / 10) * 0.001
+    rn = tmp_rn * np.log10(1+pn*0.001*pow(dn,-3) / (tmp_rn * mw))
+#     print(rn)
+#     x dbm = y mW
+#     x/10 = lg(y)
+    # 第一步延迟和能量损失
+    t1 = sum(it * bn * 1024 / rn + ie * pn*0.001*bn*1024 / rn)
+    # 第二步延迟和能量损失
+    t2 = sum(it*dn / (F*1000/num_ue) + ie * dn*1000*1000*pi*0.001 / (F*1000*1000*1000/num_ue))
+    print(t1+t2)
+    
+    
+    
