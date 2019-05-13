@@ -62,7 +62,6 @@ def sum_cost(ra, rf, dn, bn, dist):
     
 def learn(q_table1, q_table2, tc, ac, ra, rf, reward, next_tc, next_ac):
     ALPHA , GAMMA = 0.01, 0.8
-#     print(tc, ac, ra, rf, reward, next_tc, next_ac)
     for i in range(q_table1.shape[2]):
         q_table1[tc][ac][i][ra[i]] += ALPHA*(reward+GAMMA*np.max(q_table1[next_tc, next_ac])-q_table1[tc, ac, i, ra[i]])
         q_table2[tc][ac][i][rf[i]] += ALPHA*(reward+GAMMA*np.max(q_table2[next_tc, next_ac])-q_table2[tc, ac, i, rf[i]])
@@ -81,7 +80,6 @@ if __name__ == '__main__':
     dist = np.random.random(size=num_ue) * 200     # 每个ue的距离基站
     bn = np.random.uniform(300, 500, size=num_ue)  # 输入量 kbits
     dn = np.random.uniform(900,1100, size=num_ue)  # 需要周期量 兆周期数 1Mhz = 1000khz = 1000 * 1000hz
-#     tao = np.random.
     it , ie = 0.5, 0.5 # 权重
     pn , pi = 500, 100 # 传输功率， 闲置功率 mW
 
