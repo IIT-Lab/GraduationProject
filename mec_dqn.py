@@ -78,8 +78,7 @@ class Enviroment():
                     mw = pow(10, -174 / 10) * 0.001
                     rn = tmp_rn * np.log10(1 + self.pn * 0.001 * pow(self.dist[i], -3) / (tmp_rn * mw))
                     tc += self.it * self.bn[i] * 1024 / rn + self.ie * self.pn * 0.001 * self.bn[i] * 1024 / rn
-                    tc += self.it * self.dn[i] / (rf[i] * 1000) + self.ie * self.dn[
-                        i] * 1000 * 1000 * self.pi * 0.001 / (
+                    tc += self.it * self.dn[i] / (rf[i] * 1000) + self.ie * self.dn[i] * 1000 * 1000 * self.pi * 0.001 / (
                                   rf[i] * 1000 * 1000 * 1000)
             rewald = (self.all_local() - tc) / self.all_local()
             return np.array([tc, self.F - sum(ra)]), rewald, done
@@ -162,9 +161,9 @@ def train(num_ue, F):
     loss_fn = gluon.loss.L2Loss()
 
     state, _, _, = env.get_Init_state()
-    print(state)
+#    print(state)
     best_state = state[0]
-
+    print(best_state)
     for idx in range(100000):
         action_ra, action_rf = net_action(net(nd.array(state.reshape((1, -1)))).asnumpy())
 
