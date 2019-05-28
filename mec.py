@@ -63,9 +63,8 @@ def sum_cost(ra, rf, dn, bn, dist):
 def learn(q_table1, q_table2, tc, ac, ra, rf, reward, next_tc, next_ac):
     ALPHA , GAMMA = 0.01, 0.8
     for i in range(q_table1.shape[2]):
-        q_table1[tc][ac][i][ra[i]] += ALPHA*(reward+GAMMA*np.max(q_table1[next_tc, next_ac])-q_table1[tc, ac, i, ra[i]])
-        q_table2[tc][ac][i][rf[i]] += ALPHA*(reward+GAMMA*np.max(q_table2[next_tc, next_ac])-q_table2[tc, ac, i, rf[i]])
-
+        q_table1[tc][ac][i][ra[i]] += ALPHA*(reward+GAMMA*np.max(q_table1[next_tc, next_ac, i])-q_table1[tc, ac, i, ra[i]])
+        q_table2[tc][ac][i][rf[i]] += ALPHA*(reward+GAMMA*np.max(q_table2[next_tc, next_ac, i])-q_table2[tc, ac, i, rf[i]])
 
 
 if __name__ == '__main__':

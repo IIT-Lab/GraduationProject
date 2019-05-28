@@ -32,8 +32,8 @@ class Enviroment():
         # pn, pi = 500, 100  # 传输功率， 闲置功率 mW
 
     def get_Init_state(self):  # 随机初始化, 返回 tc, ac, ra, rf 消耗，剩余F，此时的ra, rf
+        # 1.0
         ra = np.random.randint(2, size=num_ue)
-        # rf = np.random.randint(F, size=num_ue)
         rf = np.zeros(ra.size)
         for i in range(ra.size):
             if ra[i] == 1.0:
@@ -51,6 +51,29 @@ class Enviroment():
                 tc += self.it * self.dn[i] / (rf[i] * 1000) + self.ie * self.dn[i] * 1000 * 1000 * self.pi * 0.001 / (
                         rf[i] * 1000 * 1000 * 1000)
         ac = 0
+
+        # 2.0
+        ra_2 = np.ones((num_ue,))
+        rf_2 = np.zeros(ra_2.size)
+        for i in range(ra_2.size):
+            if ra_2[i] == 1.0:
+                rf_2[i] = self.F / sum(ra_2)
+        tc_2 = 0
+        for i in range(ra.size):
+            if ra_2[i] == 0.:
+                tc_2 += self.it * self.dn[i] / (self.f * 1000)
+                tc_2 += self.ie * self.dn[i] * 1000 * 1000 * pow(10, -27) * pow(self.f * 1000 * 1000 * 1000, 2)
+            else:
+                tmp_rn = 1000 * 1000 * self.W / sum(ra_2)
+                mw = pow(10, -174 / 10) * 0.001
+                rn = tmp_rn * np.log10(1 + self.pn * 0.001 * pow(self.dist[i], -3) / (tmp_rn * mw))
+                tc_2 += self.it * self.bn[i] * 1024 / rn + self.ie * self.pn * 0.001 * self.bn[i] * 1024 / rn
+                tc_2 += self.it * self.dn[i] / (rf_2[i] * 1000) + self.ie * self.dn[
+                    i] * 1000 * 1000 * self.pi * 0.001 / (
+                                rf_2[i] * 1000 * 1000 * 1000)
+
+        if tc_2 < tc:
+            tc, ra, rf = tc_2, ra_2, rf_2
         return np.array([tc, ac]), ra, rf
 
     def all_local(self):  # 全部在本地执行的花费
@@ -59,8 +82,6 @@ class Enviroment():
                 self.f * 1000 * 1000 * 1000, 2))
         return cost_full_local
 
-    def sum_cost(self, ra, rf):  # 返回总消耗
-        pass
 
     def step(self, ra, rf):  # 返回下一个状态，以及奖励 next_state, reward, done
         done = False
@@ -112,26 +133,53 @@ def compute_td_loss(batch_size, net, loss_fn, replay_buffer):
     state, action, reward, next_state, done = replay_buffer.sample(batch_size)
     reward = nd.array(reward).reshape((-1, 1))
     done = nd.array(done).reshape((-1, 1))
-    # print(state, type(state), state.shape)
-    # print(next_state, type(next_state), next_state.shape)
-    # print(action, type(action), len(action))
-    # for i in action:
-    #     print(i)
-    #
-    # print("reward"*20)
-    # print(reward, type(reward), len(reward))
-    # for i in reward:
-    #     print(i)
-    #
-    # print(done, type(done), len(done))
     gamma = 0.99
-
     q_value = net(nd.array(state))
-    next_q_value = net(nd.array(state))
+    next_q_value = net(nd.array(next_state))
     expected_q_value = reward + gamma * next_q_value * (1 - done)
     loss = loss_fn(q_value, expected_q_value)
+    # print(loss.norm().asscalar())
     return loss
 
+def compute_td_loss2(net, batch_size,loss_fn, replay_buffer):
+    state, action, reward, next_state, done = replay_buffer.sample(batch_size)
+    reward = nd.array(reward).reshape((-1, 1))
+    done = nd.array(done).reshape((-1, 1))
+    gamma = 0.99
+    q_value = net(nd.array(state))
+    next_q_value = net(nd.array(next_state))
+    expected_q_value = q_value.copy()
+
+    q_value = q_value.asnumpy()
+    next_q_value = next_q_value.asnumpy()
+    expected_q_value = expected_q_value.asnumpy()
+    reward = reward.asnumpy()
+
+
+
+    for i in range(batch_size):
+        for j in range(0, num_ue * 2, 2):
+            if next_q_value[i, j] > next_q_value[i, j + 1]:
+                expected_q_value[i, j] = (reward[i, 0] + gamma * next_q_value[i, j])
+            else :
+                expected_q_value[i, j+1] = (reward[i, 0] + gamma * next_q_value[i, j+1])
+                # expected_q_value[i, ]
+                # expected_q_value[i, num_ue*2 + (j-1)*F + ]
+                index = np.argmax(next_q_value[i,num_ue*2 + (j//2)*(F+1):num_ue*2 + (j//2 + 1)*(F+1)])
+                expected_q_value[i, num_ue*2 + (j//2)*(F+1) + index] = (reward[i, 0] + gamma * next_q_value[i, num_ue*2 + (j//2)*(F+1) + index])
+
+    q_value = nd.array(q_value)
+    expected_q_value = nd.array(expected_q_value)
+    next_q_value = nd.array(next_q_value)
+    reward = nd.array(reward)
+
+    q_value.attach_grad()
+    next_q_value.attach_grad()
+    expected_q_value.attach_grad()
+    reward.attach_grad()
+
+    loss = loss_fn(q_value, expected_q_value)
+    return loss
 
 def net_action(Y):
     ra, rf = [], []
@@ -185,12 +233,18 @@ def train(num_ue, F):
             best_state = state[0]
             replay_buffer.push(state, (action_ra, action_rf), reward, next_state, done)
             state = next_state
-
+        '''
+        if len(replay_buffer) > 100:
+                with autograd.record():
+                    loss = compute_td_loss(batch_size=batch_size, net=net, loss_fn=loss_fn, replay_buffer=replay_buffer)
+                    loss.backward()
+                trainer.step(batch_size)
+        '''
         if len(replay_buffer) > 100:
             with autograd.record():
-                loss = compute_td_loss(batch_size=batch_size, net=net, loss_fn=loss_fn, replay_buffer=replay_buffer)
-                loss.backward()
-            trainer.step(batch_size)
+                loss = compute_td_loss2(batch_size=batch_size, net=net, loss_fn=loss_fn, replay_buffer=replay_buffer)
+            loss.backward()
+            trainer.step(batch_size, ignore_stale_grad=True)
     print(best_state)
 
 
